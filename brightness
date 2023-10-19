@@ -1,0 +1,38 @@
+#!/bin/bash
+
+current_brightness=$(xrandr --verbose | awk '/Brightness/ { print $2; exit }');
+
+increase_brightness(){
+    brightness=$(bc <<< "$1 + ${current_brightness}")
+    $(xrandr --output eDP --brightness ${brightness})
+}
+
+decrease_brightness(){
+    brightness=$(bc <<< "${current_brightness} - $1")
+    $(xrandr --output eDP --brightness ${brightness})
+}
+
+if [[ "$1" == "inc" ]]; then
+    increase_brightness "0.1"
+    exit 1
+elif [[ "$1" == "dec" ]]; then
+    decrease_brightness "0.1"
+    exit 1
+fi
+
+
+if [[ "$1" =~ ^[+-]?[0-9]+(\.[0-9]+)?$ ]]; then
+    operation=${1:0:1}
+    number=${1:1}
+
+    if [[ "$operation" == "+" ]]; then
+        increase_brightness $number
+    elif [[ "$operation" == "-" ]]; then
+        decrease_brightness $number
+    else
+        echo "Fuck you" >&2
+    fi
+else
+    echo "Fuck you" >&2
+fi
+

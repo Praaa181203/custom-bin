@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Function to display usage information
+usage() {
+    echo "Usage: $0 [-h hours] [-m minutes] [-s seconds] [--message <notify_message>]"
+    echo "  -h hours      Set the timer in hours"
+    echo "  -m minutes    Set the timer in minutes"
+    echo "  -s seconds    Set the timer in seconds"
+    echo "  --message     Custom notification message (default: 'Time's up!')"
+    exit 1
+}
+
+# Parse flags
+message="Time's up!"  # Default message
+time_in_seconds=0     # Initialize time to zero
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h)
+            if [[ -n "$2" && "$2" =~ ^[0-9]+$ ]]; then
+                time_in_seconds=$((time_in_seconds + $2 * 3600))  # Convert hours to seconds
+                shift 2
+            else
+                echo "Error: -h requires a numeric value."
+                usage
+            fi
+            ;;
+        -m)
+            if [[ -n "$2" && "$2" =~ ^[0-9]+$ ]]; then
+                time_in_seconds=$((time_in_seconds + $2 * 60))  # Convert minutes to seconds
+                shift 2
+            else
+                echo "Error: -m requires a numeric value."
+                usage
+            fi
+            ;;
+        -s)
+            if [[ -n "$2" && "$2" =~ ^[0-9]+$ ]]; then
+                time_in_seconds=$((time_in_seconds + $2))  # Add seconds directly
+                shift 2
+            else
+                echo "Error: -s requires a numeric value."
+                usage
+            fi
+            ;;
+        --message|-M)
+            if [ -n "$2" ]; then
+                message="$2"
+                shift 2
+            else
+                echo "Error: --message requires a value."
+                usage
+            fi
+            ;;
+        *)
+            echo "Error: Invalid argument '$1'."
+            usage
+            ;;
+    esac
+done
+
+# Validate time input
+if [ "$time_in_seconds" -le 0 ]; then
+    echo "Error: You must specify a positive time using -h, -m, or -s."
+    usage
+fi
+
+# Timer logic
+(
+    start_time=$(date +%s)
+    while true; do
+        current_time=$(date +%s)
+        elapsed_time=$((current_time - start_time))
+
+        if [ "$elapsed_time" -ge "$time_in_seconds" ]; then
+            notify-send "$message"  # Send notification
+            break
+        fi
+
+        sleep 1
+    done
+
+    # Cleanup: Kill the parent process
+    kill $$ >/dev/null 2>&1
+) &  # Run the timer in the background
+
+# Display process ID for tracking
+echo "Timer started in the background with PID $!"
+
